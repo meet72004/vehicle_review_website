@@ -1,6 +1,7 @@
 // pages/profile.tsx
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface Car {
   id: string;
@@ -13,16 +14,15 @@ interface Car {
 }
 
 export default function ProfilePage() {
+  const { data: session, status } = useSession();
   const [bookmarkedCars, setBookmarkedCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null); // holds carId being removed
+  const [busy, setBusy] = useState<string | null>(null);
 
-  // ⚠️ Replace this with the actual logged-in userId (Mongo _id string) or
-  // later read it from localStorage/session once you wire it in.
-  const userId = "68dda1431797d061a138d226";
+  const userId = session?.user?.id;
 
-  // Fetch bookmarked cars from backend endpoint
   async function fetchBookmarks() {
+    if (!userId) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/bookmarks/${userId}`);
@@ -31,8 +31,6 @@ export default function ProfilePage() {
         console.error("Failed to fetch bookmarks:", data);
         setBookmarkedCars([]);
       } else {
-        // Our API returns { bookmarks: [...ids], cars: [...carObjects] }
-        // Use the `cars` array (full objects). If not present, fall back to empty.
         const carsFromApi: Car[] = Array.isArray(data.cars) ? data.cars : [];
         setBookmarkedCars(carsFromApi);
       }
@@ -45,22 +43,15 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    if (!userId || userId.includes("replace_with")) {
-      // If userId not set, avoid calling API and show empty state
-      setBookmarkedCars([]);
+    if (status === "authenticated" && userId) {
+      fetchBookmarks();
+    } else if (status === "unauthenticated") {
       setLoading(false);
-      return;
     }
-    fetchBookmarks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [status, userId]);
 
-  // Remove bookmark and update UI optimistically
   async function handleRemoveBookmark(carId: string) {
-    if (!userId || userId.includes("replace_with")) {
-      alert("Please set a valid userId for testing or log in first.");
-      return;
-    }
+    if (!userId) return alert("You must be logged in.");
 
     if (!confirm("Remove this car from your bookmarks?")) return;
 
@@ -74,7 +65,6 @@ export default function ProfilePage() {
 
       const json = await res.json();
       if (res.ok) {
-        // Remove from UI immediately
         setBookmarkedCars((prev) => prev.filter((c) => String(c.id) !== String(carId)));
       } else {
         console.error("Remove failed:", json);
@@ -88,8 +78,19 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return <p className="text-center mt-10">Loading your bookmarks...</p>;
+  }
+
+  if (!session) {
+    return (
+      <div className="text-center mt-10">
+        <p className="text-gray-700">Please log in to view your bookmarks.</p>
+        <Link href="/login">
+          <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg">Go to Login</button>
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -131,7 +132,6 @@ export default function ProfilePage() {
                   className="border rounded-xl p-5 bg-white shadow-md hover:shadow-lg transition duration-300"
                 >
                   <div className="w-full h-40 mb-4 flex items-center justify-center overflow-hidden rounded">
-                    {/* graceful fallback for missing images */}
                     <img
                       src={img}
                       alt={car.name}

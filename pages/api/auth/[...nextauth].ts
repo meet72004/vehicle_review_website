@@ -1,69 +1,65 @@
 // pages/api/auth/[...nextauth].ts
-
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { compare } from "bcryptjs";
+import { prisma } from "../../../lib/prisma"; // adjust path if needed
 
-import { prisma } from "../../../lib/prisma"; // ✅ Correct import
-import bcrypt from "bcryptjs"; // ✅ For password verification
-
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
 
-  session: { strategy: "jwt" },
-
   providers: [
+    // 🧩 Add your existing providers below, e.g. Google, GitHub, or Credentials
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // 🔍 Find user
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
         if (!user) return null;
 
-        // 🔐 Check password
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        const isValid = user.password
+          ? await compare(credentials.password, user.password)
+          : false;
+
         if (!isValid) return null;
 
-        // ✅ Return user object
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-        };
+        return { id: user.id, name: user.name, email: user.email };
       },
     }),
   ],
 
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) token.id = user.id;
-      return token;
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
+  session: {
+    strategy: "jwt",
   },
+
+  callbacks: {
+  async session({ session, token }) {
+    if (token && session.user) {
+      // ✅ safely handle optional typing
+      session.user.id = token.sub ?? "";
+    }
+    return session;
+  },
+
+  async jwt({ token, user }) {
+    if (user) {
+      token.id = user.id; // ✅ store id in token
+    }
+    return token;
+  },
+},
 
   pages: {
     signIn: "/login",
   },
-
-  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default NextAuth(authOptions);

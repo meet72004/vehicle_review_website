@@ -16,7 +16,7 @@ export default function CarsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/cars.json")
+    fetch("/data/cars.json")
       .then((res) => res.json())
       .then((data) => {
         setCars(data);
