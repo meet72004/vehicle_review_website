@@ -187,7 +187,7 @@ export default function CarDetailPage() {
               target="_blank"
               rel="noreferrer"
             >
-              Visit Official Page
+              visit new website for more info
             </a>
           </div>
         )}
