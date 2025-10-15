@@ -1,23 +1,16 @@
-// pages/api/reviews/[userId].ts
+// pages/api/reviews/all.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
 import { prisma } from "../../../lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { userId } = req.query;
-
-  if (!userId || Array.isArray(userId)) {
-    return res.status(400).json({ error: "userId required" });
-  }
-
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    // Avoid including the related user directly to prevent errors
+    // when a related user record is missing or inconsistent.
     const reviews = await prisma.review.findMany({
-      where: { userId: String(userId) },
       orderBy: { createdAt: "desc" },
     });
 
@@ -34,8 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           return {
             ...review,
-            user: null,
-            car: car ? { name: car.name, brand: car.brand } : null
+            user: null, // intentionally omit user to avoid inconsistent relation errors
+            car: car ? { name: car.name, brand: car.brand } : null,
           };
         } catch (err) {
           console.warn("Could not load car info for review:", review.id);
@@ -50,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ reviews: reviewsWithCars });
   } catch (err: any) {
-    console.error("Get reviews error:", err);
+    console.error("Get all reviews error:", err);
     return res.status(500).json({ error: "Server error", details: err.message });
   }
 }

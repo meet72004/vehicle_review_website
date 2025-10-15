@@ -16,14 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const reviews = await prisma.review.findMany({
       where: { carId: String(carId) },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
       orderBy: { createdAt: "desc" },
     });
 
