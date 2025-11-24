@@ -9,18 +9,18 @@ interface StarRatingProps {
   size?: "sm" | "md" | "lg";
 }
 
-export default function StarRating({ 
-  rating, 
-  onRatingChange, 
-  interactive = false, 
-  size = "md" 
+export default function StarRating({
+  rating,
+  onRatingChange,
+  interactive = false,
+  size = "md",
 }: StarRatingProps) {
   const [hoverRating, setHoverRating] = useState(0);
 
   const sizeClasses = {
     sm: "w-4 h-4",
-    md: "w-5 h-5", 
-    lg: "w-6 h-6"
+    md: "w-5 h-5",
+    lg: "w-6 h-6",
   };
 
   const handleClick = (starRating: number) => {
@@ -49,7 +49,7 @@ export default function StarRating({
         <button
           key={star}
           type="button"
-          className={`${sizeClasses[size]} transition-colors ${
+          className={`${sizeClasses[size]} transition-transform duration-150 ${
             interactive ? "cursor-pointer hover:scale-110" : "cursor-default"
           }`}
           onClick={() => handleClick(star)}
@@ -58,8 +58,12 @@ export default function StarRating({
           disabled={!interactive}
         >
           <svg
-            className={`${sizeClasses[size]} ${
-              star <= displayRating ? "text-yellow-400" : "text-gray-300"
+            className={`${sizeClasses[size]} drop-shadow-sm ${
+              star <= displayRating
+                ? "text-amber-400"
+                : hoverRating >= star
+                ? "text-amber-300"
+                : "text-gray-300"
             }`}
             fill="currentColor"
             viewBox="0 0 20 20"

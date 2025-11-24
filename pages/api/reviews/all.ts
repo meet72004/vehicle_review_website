@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Avoid including the related user directly to prevent errors
+    
     // when a related user record is missing or inconsistent.
     const reviews = await prisma.review.findMany({
       orderBy: { createdAt: "desc" },

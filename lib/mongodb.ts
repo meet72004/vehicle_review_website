@@ -24,7 +24,7 @@ if (process.env.NODE_ENV === "development") {
 
 export default clientPromise;
 
-// ✅ Add this helper function so we can easily grab DB reference later
+
 export async function getDb(dbName = "vehicleDB") {
   const client = await clientPromise;
   return client.db(dbName);

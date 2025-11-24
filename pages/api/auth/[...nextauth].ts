@@ -9,7 +9,7 @@ export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
 
   providers: [
-    // 🧩 Add your existing providers below, e.g. Google, GitHub, or Credentials
+    
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -43,7 +43,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
   async session({ session, token }) {
     if (token && session.user) {
-      // ✅ safely handle optional typing
+      // safely handle optional typing
       session.user.id = token.sub ?? "";
     }
     return session;
